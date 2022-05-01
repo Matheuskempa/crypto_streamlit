@@ -3,6 +3,7 @@ import plotly.express as ps
 import streamlit as st
 from cripto_project import CriptoProject
 
+
 def request_crypto(type):
     crypto = CriptoProject()
     df = crypto(type)
