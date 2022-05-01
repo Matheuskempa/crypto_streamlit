@@ -1,4 +1,3 @@
-import pandas as pd
 import plotly.express as ps
 import streamlit as st
 from cripto_project import CriptoProject
