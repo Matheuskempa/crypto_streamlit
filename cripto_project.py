@@ -83,7 +83,7 @@ class CriptoProject():
             date_2 = self.min_date.date()
             if  date_1 > date_2 :
                 dataframes_list.append(_df)
-                if data_page>=200:
+                if data_page>=190:
                     n = n + 1
                 else:
                     data_page = data_page + 1
