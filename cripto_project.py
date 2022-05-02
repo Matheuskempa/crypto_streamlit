@@ -1,6 +1,13 @@
 import requests
 import pandas as pd
 from datetime import datetime, timedelta
+from keras.models import Sequential
+from keras.layers.core import Dense
+from sklearn.ensemble import RandomForestClassifier
+import plotly.express as px
+from plotly.subplots import make_subplots
+from sklearn.metrics import accuracy_score,precision_score,recall_score
+
 
 class CriptoProject():
     
@@ -53,7 +60,7 @@ class CriptoProject():
 
         return df
 
-    def get_all_news_database(self, ticker='BTC'):
+    def get_all_news_database(self,ticker='BTC'):
         """
         Get all history news dataframe from the desired ticker
         
@@ -191,9 +198,18 @@ class CriptoProject():
 
         return df_history_final
 
-    def __call__(self, ticker):
+    def __call__(self,ticker):
         """
         Execute all other functions created.
+
+        Params
+        --------
+        df_history: pandas.DataFrame
+            history cripto dataframe
+        
+        Returns        
+        --------
+        df: pandas.DataFrame
 
         """
         df_history = self.get_history_df(ticker)
@@ -205,3 +221,263 @@ class CriptoProject():
 
 
 
+class CriptoProjectAnalysis():
+    
+    def __init__(self):
+        print("Started CriptoProjectAnalysis.")
+
+    def get_real_analysed_dataframe(self,df):
+        """
+        Filter the first valid date and filter pandas dataframe.
+
+        Params
+        --------
+        df: pandas.DataFrame
+            history cripto dataframe
+        
+        Returns        
+        --------
+        df_final: pandas.DataFrame        
+
+        """
+
+        data = df[(df["article_negative"]>0)&
+                    (df["article_neutral"]>0)&
+                    (df["article_positive"]>0)&
+                    (df["video_negative"]>0)&
+                    (df["video_neutral"]>0)&
+                    (df["video_positive"]>0)].reset_index(drop=True)["data_final"][0]
+
+        df_final = df[df["data_final"]>=pd.to_datetime(str(data)).date()].reset_index(drop=True)
+        return df_final
+    
+    def get_analysed_time_series_graph(self,df):
+        """
+        Generates the time series graph.
+
+        Params
+        --------
+        df: pandas.DataFrame
+        
+        Returns        
+        --------
+        fig: graph        
+
+        """
+        fig = px.line(df.reset_index(), x="data_final", y="close")
+
+        return fig.show()
+
+    def get_variation_graph(self,df,coluna='fechamento_binario',valores="fechamento"):
+        """
+        Generates the time series graph.
+
+        Params
+        --------
+        df: pandas.DataFrame
+
+        coluna: string
+            name of de column coloured
+
+        valores: string 
+            name of the collumn value
+        
+        Returns        
+        --------
+        fig: graph        
+
+        """
+
+        fig = px.bar(df, x=df.data_final, y=valores, color=coluna)
+        fig.update_yaxes(ticklabelposition="inside top", title=None)
+        return fig
+
+    def get_relational_graph(self,df,category='article_negative'):
+        """
+        Generates the time series graph.
+
+        Params
+        --------
+        df: pandas.DataFrame
+        
+        category: string
+            wich variable analyse
+        
+        Returns        
+        --------
+        fig: graph        
+
+        """
+
+        fig = px.line(df, x="data_final", y="close")
+        fig_2 = px.line(df, x="data_final", y=category)
+        fig_2.update_traces(yaxis="y2")
+        subfig = make_subplots(specs=[[{"secondary_y": True}]])
+        subfig.add_traces(fig.data + fig_2.data)
+        subfig.for_each_trace(lambda t: t.update(line=dict(color=t.marker.color)))
+        # fig_2.update_layout(height=800, width=1000, title_text="Time Series")
+        # subfig.show()
+        return subfig
+
+    def _make_predictions_random_forest(self,df,quantidade):
+        """
+        Generates the predictions with random forest.
+
+        Params
+        --------
+        df: pandas.DataFrame
+
+        quantidade: int
+        
+        Returns        
+        --------
+        df_final: pandas.DataFrame
+        
+
+        """
+        base_x = df[['open', 'volumefrom','article_negative', 'article_neutral', 'article_positive',
+                          'video_negative', 'video_neutral', 'video_positive']]
+        base_y = df[['fechamento_binario']]
+        
+        clf = RandomForestClassifier(n_estimators=95,max_depth=2, random_state=0)
+
+        real_list = []
+        prediction_list = []
+
+        for i in range(quantidade,len(base_x)):
+            
+            base_x_new = base_x[:i+1]
+            base_y_new = base_y[:i+1]
+            base_x_test = base_x[i+1:i+2]
+            base_y_test = base_y[i+1:i+2]
+            
+            
+            clf.fit(base_x_new.values, base_y_new.fechamento_binario.ravel())
+            
+            try:
+                valor_predito = clf.predict(base_x_test)[0]
+                prediction_list.append(valor_predito)
+                real_list.append(base_y_test.values[0][0])
+            except:
+                break
+        df_final = pd.DataFrame(zip(df.fechamento[quantidade:].reset_index(drop=True).to_list(),prediction_list,real_list),columns=["var","predito","real"])
+        return df_final
+    
+    def _make_predictions_deep_learning(self,df,quantidade):
+        """
+        Generates the predictions with random forest.
+
+        Params
+        --------
+        df: pandas.DataFrame
+
+        quantidade: int
+        
+        Returns        
+        --------
+        df_final: pandas.DataFrame
+          
+        """
+        base_x = df[['open', 'volumefrom','article_negative', 'article_neutral', 'article_positive',
+                          'video_negative', 'video_neutral', 'video_positive']]
+        base_y = df[['fechamento_binario']]
+ 
+        model = Sequential() 
+        model.add(Dense(50, activation='relu', input_dim=8))
+        model.add(Dense(1, activation='sigmoid'))
+        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy']) 
+        model.summary()
+        
+        real_list = []
+        prediction_list = []
+
+        for i in range(quantidade,len(base_x)):
+            
+            base_x_new = base_x[:i+1]
+            base_y_new = base_y[:i+1]
+            base_x_test = base_x[i+1:i+2]
+            base_y_test = base_y[i+1:i+2]
+            
+            model.fit(base_x_new, base_y_new, epochs=50, batch_size=30)
+            
+            try:
+                valor_predito = model.predict(base_x)[0]
+                print(valor_predito)
+                print(base_y_test.values[0][0])
+                prediction_list.append(valor_predito)
+                real_list.append(base_y_test.values[0][0])
+            except:
+                break
+        
+        y_pred = []
+        for i in prediction_list:
+            y_pred.append(round(i[0],0))
+        df_final = pd.DataFrame(zip(df.fechamento[quantidade:].reset_index(drop=True).to_list(),y_pred,real_list),columns=["var","predito","real"])
+        
+        return df_final
+
+    def _get_metrics(self,df):
+        """
+        Get all Metrics of the predictions.
+
+        Params
+        --------
+        df: pandas.DataFrame
+        
+        Returns        
+        --------
+        accuracy: float
+        prediction: float
+        recall: float        
+        
+        """
+        "predito","real"
+        acc = accuracy_score(df.real.to_list(), df.predito.to_list())
+        precision = precision_score(df.real.to_list(), df.predito.to_list())
+        recall = recall_score(df.real.to_list(), df.predito.to_list())
+        return acc, precision, recall
+
+    def __call__(self,df,type,percentual):
+        """
+        Execute all other functions created.
+
+        Params
+        --------
+        df: pandas.DataFrame
+            history cripto dataframe
+        
+        type: string
+            Deep learning or Random Forest 
+
+        percentual: float
+        
+        Returns        
+        --------
+        df: pandas.DataFrame
+        
+        """
+        df_ = self.get_real_analysed_dataframe(df)
+
+        qtnd = round(len(df_)*percentual)
+
+        datas = df_[(qtnd+1):].reset_index()["data_final"].to_list()
+
+        if type == "Deep Learning":
+
+            self.get_analysed_time_series_graph(df_)
+
+            self.get_relational_graph(df_)            
+            
+            self.get_variation_graph(df_)
+
+            base = self._make_predictions_deep_learning(df_, qtnd)
+
+            base["data_final"] = pd.DataFrame(datas)
+
+
+        else:
+            base = self._make_predictions_random_forest(df_, qtnd)
+
+        a,p,r = self._get_metrics(base)
+        
+        return base,a,p,r

@@ -1,3 +1,7 @@
 plotly
 streamlit
 streamlit-aggrid
+pandas
+keras
+tensorflow
+sklearn
