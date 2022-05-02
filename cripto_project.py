@@ -83,7 +83,7 @@ class CriptoProject():
             date_2 = self.min_date.date()
             if  date_1 > date_2 :
                 dataframes_list.append(_df)
-                if data_page>=10:
+                if data_page>=200:
                     n = n + 1
                 else:
                     data_page = data_page + 1
@@ -346,10 +346,10 @@ class CriptoProjectAnalysis():
 
         for i in range(quantidade,len(base_x)):
             
-            base_x_new = base_x[:i+1]
-            base_y_new = base_y[:i+1]
-            base_x_test = base_x[i+1:i+2]
-            base_y_test = base_y[i+1:i+2]
+            base_x_new = base_x[:i]
+            base_y_new = base_y[:i]
+            base_x_test = base_x[i:i+1]
+            base_y_test = base_y[i:i+1]
             
             
             clf.fit(base_x_new.values, base_y_new.fechamento_binario.ravel())
@@ -393,10 +393,10 @@ class CriptoProjectAnalysis():
 
         for i in range(quantidade,len(base_x)):
             
-            base_x_new = base_x[:i+1]
-            base_y_new = base_y[:i+1]
-            base_x_test = base_x[i+1:i+2]
-            base_y_test = base_y[i+1:i+2]
+            base_x_new = base_x[:i]
+            base_y_new = base_y[:i]
+            base_x_test = base_x[i:i+1]
+            base_y_test = base_y[i:i+1]
             
             model.fit(base_x_new, base_y_new, epochs=50, batch_size=30)
             

@@ -1,4 +1,3 @@
-from matplotlib.pyplot import step
 import plotly.express as ps
 import streamlit as st
 from cripto_project import CriptoProject, CriptoProjectAnalysis
@@ -23,19 +22,19 @@ def create_graph(df):
 
 def show_analysis(df):
 
-    type = st.selectbox(
+    type = st.sidebar.selectbox(
         "Modelo",
         options=["-","Deep Learning", "Random Forest"]
     )
     
-    percentual = st.slider('Percentual de Treino', value=0.5, min_value=0.0, max_value=1.0, step=0.1)
+    percentual = st.sidebar.slider('Percentual de Treino', value=0.5, min_value=0.0, max_value=1.0, step=0.1)
 
     analysis = CriptoProjectAnalysis()
     df_ = analysis.get_real_analysed_dataframe(df)
 
     qtnd = round(len(df_)*percentual)
 
-    datas = df_[(qtnd+1):].reset_index()["data_final"].to_list()
+    # datas = df_[(qtnd):].reset_index()["data_final"].to_list()
     if type == "-":
         pass
     elif type == "Deep Learning":
@@ -47,8 +46,11 @@ def show_analysis(df):
         # fig_2 = analysis.get_variation_graph(df_)
         # st.plotly_chart(fig_2)
         base = analysis._make_predictions_deep_learning(df_, qtnd)
+        
+        
+        st.dataframe(df_)
 
-        base["data_final"] = pd.DataFrame(datas)
+        # base["data_final"] = pd.DataFrame(datas)
         
         a,p,r = analysis._get_metrics(base)
 
@@ -66,13 +68,29 @@ def show_analysis(df):
 
     else:
 
-        fig_1 = analysis.get_relational_graph(df_)            
+        fig_1 = analysis.get_relational_graph(df_)  
+        st.title("Período de Análise")
+        st.write("No gráfico abaixo na curva azul temos o reço de fechamento e na curva vermelha temos a quantidade de notícias com sentimento negativo no dia anterior.")          
         st.plotly_chart(fig_1)
-        fig_2 = analysis.get_variation_graph(df_)
-        st.plotly_chart(fig_2)
+        # fig_2 = analysis.get_variation_graph(df_)
+        # st.plotly_chart(fig_2)
         base = analysis._make_predictions_random_forest(df_, qtnd)
-
+        st.dataframe(df_)
+        
+        # base["data_final"] = pd.DataFrame(datas)
+        
         a,p,r = analysis._get_metrics(base)
+
+        st.title("Métricas de Avaliação")
+        # st.subtitle("Acurácia")
+        st.write(f"Acurácia de :{str(a)}")
+        # st.subtitle("Precisão")
+        st.write(f"Precisão de :{str(p)}")
+        # st.subtitle("Recall")
+        st.write(f"Acurácia de :{str(r)}")
+        st.title("Resultados")
+        # st.subtitle("Previsão")
+        st.dataframe(base)
     
     
 
@@ -87,8 +105,6 @@ currency = st.sidebar.selectbox(
     "Moeda",
     options=["-","BTC", "ETH", "DOGE"]
 )
-st.title("Resumo do Projeto")
-st.write("Nesse projeto: ")
 
 if currency != "-":
     df = request_crypto(currency)
